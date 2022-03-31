@@ -39,6 +39,26 @@ class Distribution(nn.Module):
                 )
         return self._log_prob(inputs, context)
 
+    def get_obj(self, inputs, context=None):
+        """Calculate log probability under the distribution.
+
+        Args:
+            inputs: Tensor, input variables.
+            context: Tensor or None, conditioning variables. If a Tensor, it must have the same
+                number or rows as the inputs. If None, the context is ignored.
+
+        Returns:
+            A Tensor of shape [input_size], the log probability of the inputs given the context.
+        """
+        inputs = torch.as_tensor(inputs)
+        if context is not None:
+            context = torch.as_tensor(context)
+            if inputs.shape[0] != context.shape[0]:
+                raise ValueError(
+                    "Number of input items must be equal to number of context items."
+                )
+        return self._log_prob(inputs, context)
+
     def _log_prob(self, inputs, context):
         raise NotImplementedError()
 
