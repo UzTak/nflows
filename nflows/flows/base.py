@@ -5,6 +5,7 @@ import torch.nn
 
 from nflows.distributions.base import Distribution
 from nflows.utils import torchutils
+import global_variable as g
 
 
 class Flow(Distribution):
@@ -38,7 +39,7 @@ class Flow(Distribution):
         embedded_context = self._embedding_net(context)
         noise, logabsdet = self._transform(inputs, context=embedded_context)
         log_prob = self._distribution.log_prob(noise, context=embedded_context)
-        return log_prob + logabsdet
+        return g.alpha * log_prob + logabsdet
 
     def _sample(self, num_samples, context):
         embedded_context = self._embedding_net(context)
