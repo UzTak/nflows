@@ -37,6 +37,7 @@ M = 100
 
 g.num_iter = 15000
 g.idx = 0
+g.alpha = 1
 
 base_dist = StandardNormal(shape=[2])
 
@@ -90,12 +91,13 @@ for i in range(g.num_iter):
         with torch.no_grad():
             zgrid = flow.log_prob(xyinput).exp().reshape(100, 100)
 
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111)
-        #
-        # ax.set_aspect('equal', adjustable='box')
-        # plt.contourf(xgrid.numpy(), ygrid.numpy(), zgrid.numpy())
-        # plt.title('iteration {}'.format(i + 1))
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        ax.set_aspect('equal', adjustable='box')
+        plt.contourf(xgrid.numpy(), ygrid.numpy(), zgrid.numpy())
+        plt.title('iteration {}'.format(i + 1))
+        plt.show()
 
         # printing the parameters
         K_list = []

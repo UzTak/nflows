@@ -52,8 +52,11 @@ class Planer(Transform):
     def forward(self, inputs, context=None):
         if not self.training and self.using_cache:
             self._check_forward_cache()
-            A = torch.tensor([[1, 0.3], [0.5, 1]])
-            B = torch.tensor([[0.7, 0.3], [0.1, 0.8]])
+            A = torch.tensor([[1, 0], [0, 1]])
+            B = torch.tensor([[1, 0], [0, 1]])
+
+            if torch.mm(self.s, self._weight.T) < -1:
+                self.get_s_hat()
 
             control = self.s * nn.Tanh(F.linear(torch.matmul(inputs, self.cache.weight), self.bias))
             outputs = torch.matmul(inputs, A) + torch.matmul(control, B)
@@ -61,6 +64,16 @@ class Planer(Transform):
             return outputs, logabsdet
         else:
             return self.forward_no_cache(inputs)
+
+    def get_s_hat(self) -> None:
+        """Enforce w^T u >= -1. When using h(.) = tanh(.), this is a sufficient condition
+        for invertibility of the transformation f(z). See Appendix A.1.
+        """
+        wtu = torch.mm(self.s, self._weight.T)
+        m_wtu = -1 + torch.log(1 + torch.exp(wtu))
+        self.s.data = (
+                self.s + (m_wtu - wtu) * self._weight / torch.norm(self._weight, p=2, dim=1) ** 2
+        )
 
     def _check_forward_cache(self):
         if self.cache.weight is None and self.cache.logabsdet is None:
@@ -170,12 +183,16 @@ class NaivePlaner(Planer):
         batch_size = inputs.shape[0]
 
         # define the dynamics
-        A = torch.tensor([[1, 0.3], [0.5, 1]])
-        B = torch.tensor([[0.7, 0.3], [0.1, 0.8]])
+        A = torch.tensor([[1.0, 0], [0, 1.0]])
+        B = torch.tensor([[1.0, 0], [0, 1.0]])
 
         g.alpha0 = 1
         g.alphaf = 1
         g.alpha = g.alpha0 + (g.alphaf - g.alpha0) / g.num_iter * g.idx
+
+        # tuning of s
+        if torch.mm(self.s, self._weight.T) < -1:
+            self.get_s_hat_no_cache()
 
         control = self.s * torch.tanh(F.linear(inputs, self._weight, self.bias))
         outputs = torch.matmul(inputs, A) + torch.matmul(control, B)
@@ -186,6 +203,16 @@ class NaivePlaner(Planer):
         logabsdet = torch.log(1e-4 + abs_det)
         logabsdet = g.alpha * logabsdet * outputs.new_ones(batch_size)  # - torch.norm(control)**2
         return outputs, torch.flatten(logabsdet)
+
+    def get_s_hat_no_cache(self) -> None:
+        """Enforce w^T u >= -1. When using h(.) = tanh(.), this is a sufficient condition
+        for invertibility of the transformation f(z). See Appendix A.1.
+        """
+        wtu = torch.mm(self.s, self._weight.T)
+        m_wtu = -1 + torch.log(1 + torch.exp(wtu))
+        self.s.data = (
+                self.s + (m_wtu - wtu) * self._weight / torch.norm(self._weight, p=2, dim=1) ** 2
+        )
 
     def inverse_no_cache(self, inputs):
         """Cost:

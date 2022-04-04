@@ -37,7 +37,7 @@ num_layers = 32
 # MC sampling number
 M = 100
 
-g.num_iter = 15000
+g.num_iter = 30000
 g.idx = 0
 
 base_dist = StandardNormal(shape=[2])
@@ -50,7 +50,7 @@ for _ in range(num_layers):
 transform = CompositeTransform(transforms)
 
 flow = Flow(transform, base_dist)
-optimizer = optim.Adam(flow.parameters())
+optimizer = optim.Adam(flow.parameters(), lr=0.002)  # default lr = 0.01
 # print(list(flow.parameters()))
 
 for i in range(g.num_iter):
@@ -81,7 +81,7 @@ for i in range(g.num_iter):
 
     # at the final iteration
     # flow from Normal (base) to the sampling dist.
-    if (i + 1) % g.num_iter == 0:
+    if (i + 1) % (g.num_iter/3) == 0:   # g.num_iter
         xline = torch.linspace(-3, 10, 100)
         yline = torch.linspace(-4, 10, 100)
         xgrid, ygrid = torch.meshgrid(xline, yline)

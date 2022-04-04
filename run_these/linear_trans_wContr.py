@@ -182,14 +182,14 @@ class NaiveLinear(Linear):
         B = torch.tensor([[0.7, 0.3], [0.1, 0.8]])
         b = torch.tensor([[0, 0]])
 
-        g.alpha0 = 50
-        g.alphaf = 50
+        g.alpha0 = 1
+        g.alphaf = 1
         g.alpha = g.alpha0 + (g.alphaf - g.alpha0) / g.num_iter * g.idx
 
         outputs = F.linear(inputs, A + torch.matmul(B, self._weight), self.bias)
         control = F.linear(inputs, self._weight, self.bias)
         logabsdet = torchutils.logabsdet(A + torch.matmul(B, self._weight))
-        logabsdet = g.alpha * logabsdet * outputs.new_ones(batch_size) - torch.norm(control)**2
+        logabsdet = g.alpha * logabsdet * outputs.new_ones(batch_size) # - torch.norm(control)**2
         return outputs, logabsdet
 
     def inverse_no_cache(self, inputs):
